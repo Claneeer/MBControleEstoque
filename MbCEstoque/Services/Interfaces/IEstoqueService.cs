@@ -3,7 +3,9 @@ namespace MbCEstoque.Services.Interfaces
 {
     public interface IEstoqueService
     {
-        Task<MovimentacaoEstoque> RegistrarMovimentacaoAsync(
+        Task<MovimentacaoEstoque> RegistrarEntradaAsync(
+            int pordutoId, int qualidade, string? obs=null);
+        Task<MovimentacaoEstoque> RegistrarSaidaAsync(
             int pordutoId, int qualidade, string? obs=null);
     }
 }
