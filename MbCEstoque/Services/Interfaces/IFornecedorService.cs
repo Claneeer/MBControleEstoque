@@ -1,6 +1,11 @@
 ﻿namespace MbCEstoque.Services.Interfaces
 {
-    public class IFornecedorService
+    public interface IFornecedorService
     {
+     Task<List<Fornecedor>> ListarTodasFornecedor();
+     Task<Fornecedor?> PesquisarFornecedorPorId(int id);
+     Task<Fornecedor> CriarAsync(Fornecedor fornecedor);
+     Task<Fornecedor?> AlterarAsync(Fornecedor fornecedor);
+     Task<bool> ExcluirAsync(int id);
     }
 }
