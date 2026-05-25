@@ -1,7 +1,22 @@
-using MbCEstoque.Components;
+﻿using MbCEstoque.Components;
+using MbCEstoque.Services;
+using MbCEstoque.Services.Interfaces;
+using MBCEstoque.Data;
+using Microsoft.EntityFrameworkCore;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ── 1. DbContext ──────────────────────────────────────────────────────────────
+builder.Services.AddDbContext<SQLServerEstoqueDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+// ── 2. Services (Injeção de Dependência) ─────────────────────────────────────
+builder.Services.AddScoped<ICategoriaService, CategoriaService>();
+builder.Services.AddScoped<IEstoqueService, EstoqueService>();
+builder.Services.AddScoped<IFornecedorService, FornecedorService>();
+builder.Services.AddScoped<IProdutoService, ProdutoService>();
+
+
 
 // Add MudBlazor services
 builder.Services.AddMudServices();

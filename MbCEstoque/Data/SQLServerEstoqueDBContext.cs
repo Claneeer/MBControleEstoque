@@ -1,65 +1,66 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations.Operations;
+using Microsoft.Identity.Client;
 
-public class EstoqueDbContext : DbContext
+namespace MBCEstoque.Data
 {
-    // Construtor recebe as opções via Injeção de Dependência (DI)
-    // As opções incluem: provider (SqlServer), connection string, etc.
-    public EstoqueDbContext(DbContextOptions<EstoqueDbContext> options)
-        : base(options) { }
-
-    // ── DbSets ──────────────────────────────────────────────────
-    // Cada DbSet<T> representa uma tabela no banco.
-    // O nome da propriedade vira o nome da tabela (por convenção).
-    public DbSet<Produto> Produtos { get; set; }
-    public DbSet<Categoria> Categorias { get; set; }
-    public DbSet<Fornecedor> Fornecedores { get; set; }
-    public DbSet<Estoque> Estoques { get; set; }
-    public DbSet<MovimentacaoEstoque> Movimentacoes { get; set; }
-
-    // ── OnModelCreating ──────────────────────────────────────────
-    // Configurações avançadas que não podem ser feitas via Data Annotations.
-    // Aqui usamos a Fluent API — alternativa mais poderosa às annotations.
-    protected override void OnModelCreating(ModelBuilder builder)
+    public class SQLServerEstoqueDbContext : DbContext
     {
-        base.OnModelCreating(builder);
+        public SQLServerEstoqueDbContext(DbContextOptions options) : base(options)
+        {
+        }
+        public DbSet<Produto> Produtos { get; set; }
+        public DbSet<Categoria> Categorias { get; set; }
+        public DbSet<Fornecedor> Fornecedores { get; set; }
+        public DbSet<Estoque> Estoques { get; set; }
+        public DbSet<MovimentacaoEstoque> Movimentacoes { get; set; }
 
-        // ── Nomes explícitos das tabelas ─────────────────────────
-        builder.Entity<Produto>().ToTable("Produtos");
-        builder.Entity<Categoria>().ToTable("Categorias");
-        builder.Entity<Fornecedor>().ToTable("Fornecedores");
-        builder.Entity<Estoque>().ToTable("Estoques");
-        builder.Entity<MovimentacaoEstoque>().ToTable("Movimentacoes");
+        // ── OnModelCreating ──────────────────────────────────────────
+        // Configurações avançadas que não podem ser feitas via Data Annotations.
+        // Aqui usamos a Fluent API — alternativa mais poderosa às annotations.
+        protected override void OnModelCreating(ModelBuilder builder)
+        {
+            base.OnModelCreating(builder);
 
-        // ── Relacionamento 1:1 Produto → Estoque ─────────────────
-        // HasOne + WithOne define o tipo do relacionamento
-        // OnDelete Cascade: ao deletar produto, o estoque é deletado junto
-        builder.Entity<Produto>()
-            .HasOne(p => p.Estoque)
-            .WithOne(e => e.Produto)
-            .HasForeignKey<Estoque>(e => e.ProdutoId)
-            .OnDelete(DeleteBehavior.Cascade);
+            // ── Nomes explícitos das tabelas ─────────────────────────
+            builder.Entity<Produto>().ToTable("Produto");
+            builder.Entity<Categoria>().ToTable("Categoria");
+            builder.Entity<Fornecedor>().ToTable("Fornecedore");
+            builder.Entity<Estoque>().ToTable("Estoque");
+            builder.Entity<MovimentacaoEstoque>().ToTable("MovimentacoesEstoque");
 
-        // UNIQUE INDEX em ProdutoId garante a cardinalidade 1:1
-        builder.Entity<Estoque>()
-            .HasIndex(e => e.ProdutoId).IsUnique();
+            // ── Relacionamento 1:1 Produto → Estoque ─────────────────
+            // HasOne + WithOne define o tipo do relacionamento
+            // OnDelete Cascade: ao deletar produto, o estoque é deletado junto
+            builder.Entity<Produto>()
+                .HasOne(p => p.Estoque)
+                .WithOne(e => e.Produto)
+                .HasForeignKey<Estoque>(e => e.ProdutoId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-        // ── Enum → byte no banco ─────────────────────────────────
-        // TipoMovimentacao é armazenado como TINYINT (1 ou 2)
-        // O EF Core converte automaticamente entre Enum e byte
-        builder.Entity<MovimentacaoEstoque>()
-            .Property(m => m.TipoMovimentacao)
-            .HasConversion<byte>();
+            // UNIQUE INDEX em ProdutoId garante a cardinalidade 1:1
+            builder.Entity<Estoque>()
+                .HasIndex(e => e.ProdutoId).IsUnique();
 
-        // ── Índices para performance ─────────────────────────────
-        builder.Entity<Produto>().HasIndex(p => p.Nome);
-        builder.Entity<Produto>().HasIndex(p => p.CodigoBarras).IsUnique();
-        builder.Entity<MovimentacaoEstoque>().HasIndex(m => m.DataMovimentacao);
+            // ── Enum → byte no banco ─────────────────────────────────
+            // TipoMovimentacao é armazenado como TINYINT (1 ou 2)
+            // O EF Core converte automaticamente entre Enum e byte
+            builder.Entity<MovimentacaoEstoque>()
+                .Property(m => m.TipoMovimentacao)
+                .HasConversion<byte>();
 
-        // ── Seed data — categorias padrão ────────────────────────
-        builder.Entity<Categoria>().HasData(
-            new Categoria { Id = 1, Nome = "Eletrônicos", Ativo = true },
-            new Categoria { Id = 2, Nome = "Informática", Ativo = true },
-            new Categoria { Id = 3, Nome = "Escritório", Ativo = true }
-        );
+            // ── Índices para performance ─────────────────────────────
+            builder.Entity<Produto>().HasIndex(p => p.Nome);
+            builder.Entity<Produto>().HasIndex(p => p.CodigoBarras).IsUnique();
+            builder.Entity<MovimentacaoEstoque>().HasIndex(m => m.DataMovimentacao);
+
+            // ── Seed data — categorias padrão ────────────────────────
+            builder.Entity<Categoria>().HasData(
+                new Categoria { Id = 1, Nome = "Eletrônicos", Ativo = true },
+                new Categoria { Id = 2, Nome = "Informática", Ativo = true },
+                new Categoria { Id = 3, Nome = "Escritório", Ativo = true }
+            );
+        }
     }
 }
+
