@@ -1,32 +1,53 @@
-﻿using MbCEstoque.Services.Interfaces;
+using MbCEstoque.Services.Interfaces;
+using MBCEstoque.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace MbCEstoque.Services
 {
     public class FornecedorService : IFornecedorService
     {
-        public Task<Fornecedor?> AlterarAsync(Fornecedor fornecedor)
+        private readonly SQLServerEstoqueDbContext _context;
+
+        public FornecedorService(SQLServerEstoqueDbContext context)
         {
-            throw new NotImplementedException();
+            _context = context;
         }
 
-        public Task<Fornecedor> CriarAsync(Fornecedor fornecedor)
+        public async Task<List<Fornecedor>> ListarTodasFornecedor()
         {
-            throw new NotImplementedException();
+            return await _context.Fornecedores.AsNoTracking().ToListAsync();
         }
 
-        public Task<bool> ExcluirAsync(int id)
+        public async Task<Fornecedor?> PesquisarFornecedorPorId(int id)
         {
-            throw new NotImplementedException();
+            return await _context.Fornecedores.AsNoTracking().FirstOrDefaultAsync(f => f.Id == id);
         }
 
-        public Task<List<Fornecedor>> ListarTodasFornecedor()
+        public async Task<Fornecedor> CriarAsync(Fornecedor fornecedor)
         {
-            throw new NotImplementedException();
+            _context.Fornecedores.Add(fornecedor);
+            await _context.SaveChangesAsync();
+            return fornecedor;
         }
 
-        public Task<Fornecedor?> PesquisarFornecedorPorId(int id)
+        public async Task<bool> AlterarAsync(Fornecedor fornecedor)
         {
-            throw new NotImplementedException();
+            var existe = await _context.Fornecedores.AnyAsync(f => f.Id == fornecedor.Id);
+            if (!existe) return false;
+
+            _context.Fornecedores.Update(fornecedor);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> ExcluirAsync(int id)
+        {
+            var fornecedor = await _context.Fornecedores.FindAsync(id);
+            if (fornecedor is null) return false;
+
+            _context.Fornecedores.Remove(fornecedor);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

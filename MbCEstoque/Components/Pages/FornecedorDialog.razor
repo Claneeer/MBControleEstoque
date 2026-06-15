@@ -1,0 +1,170 @@
+@using MbCEstoque.Models
+@using MbCEstoque.Services.Interfaces
+@using MudBlazor
+@inject IFornecedorService fornecedorService
+@inject ISnackbar Snackbar
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@(Fornecedor.Id == 0 ? Icons.Material.Filled.AddBusiness : Icons.Material.Filled.Edit)"
+                     Class="mr-2"
+                     Style="vertical-align: middle;" />
+            @(Fornecedor.Id == 0 ? "Novo Fornecedor" : "Editar Fornecedor")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="_formValido">
+            <MudGrid Spacing="3">
+
+                <!-- Razão Social -->
+                <MudItem xs="12" md="8">
+                    <MudTextField @bind-Value="Fornecedor.RazaoSocial"
+                                  Label="Razão Social"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="Razão Social é obrigatória."
+                                  MaxLength="200"
+                                  Counter="200"
+                                  Immediate="true"
+                                  AdornmentIcon="@Icons.Material.Filled.Business"
+                                  Adornment="Adornment.Start" />
+                </MudItem>
+
+                <!-- CNPJ -->
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="Fornecedor.CNPJ"
+                                  Label="CNPJ"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="CNPJ é obrigatório."
+                                  MaxLength="18"
+                                  Placeholder="XX.XXX.XXX/XXXX-XX"
+                                  Immediate="true"
+                                  AdornmentIcon="@Icons.Material.Filled.Badge"
+                                  Adornment="Adornment.Start" />
+                </MudItem>
+
+                <!-- E-mail -->
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="Fornecedor.Email"
+                                  Label="E-mail"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Email"
+                                  MaxLength="200"
+                                  Immediate="true"
+                                  AdornmentIcon="@Icons.Material.Filled.Email"
+                                  Adornment="Adornment.Start" />
+                </MudItem>
+
+                <!-- Telefone -->
+                <MudItem xs="12" md="6">
+                    <MudTextField @bind-Value="Fornecedor.Telefone"
+                                  Label="Telefone"
+                                  Variant="Variant.Outlined"
+                                  InputType="InputType.Telephone"
+                                  MaxLength="20"
+                                  Immediate="true"
+                                  AdornmentIcon="@Icons.Material.Filled.Phone"
+                                  Adornment="Adornment.Start" />
+                </MudItem>
+
+                <!-- Endereço -->
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Fornecedor.Endereco"
+                                  Label="Endereço"
+                                  Variant="Variant.Outlined"
+                                  Lines="2"
+                                  MaxLength="300"
+                                  Counter="300"
+                                  Immediate="true"
+                                  AdornmentIcon="@Icons.Material.Filled.LocationOn"
+                                  Adornment="Adornment.Start" />
+                </MudItem>
+
+                <!-- Status -->
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="Fornecedor.Ativo"
+                               Color="Color.Success"
+                               UncheckedColor="Color.Default"
+                               Label="@_labelAtivo" />
+                </MudItem>
+
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar"
+                   Variant="Variant.Text"
+                   Color="Color.Default"
+                   Disabled="_salvando">
+            Cancelar
+        </MudButton>
+        <MudButton OnClick="SalvarAsync"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   Disabled="_salvando">
+            @if (_salvando)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Salvando...</MudText>
+            }
+            else
+            {
+                <MudText>Salvar</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+
+</MudDialog>
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public Fornecedor Fornecedor { get; set; } = new Fornecedor();
+
+    private string _labelAtivo => Fornecedor.Ativo ? "Fornecedor Ativo" : "Fornecedor Inativo";
+
+    private MudForm _form = default!;
+    private bool _formValido;
+    private bool _salvando;
+    private void Cancelar() 
+    { 
+        MudDialog.Cancel(); 
+    }
+    private async Task SalvarAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid) return;
+
+        _salvando = true;
+        try
+        {
+            if (Fornecedor.Id == 0)
+            {
+                await fornecedorService.CriarAsync(Fornecedor);
+                Snackbar.Add("Fornecedor criado com sucesso!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                var sucesso = await fornecedorService.AlterarAsync(Fornecedor);
+                if (sucesso)
+                {
+                    Snackbar.Add("Fornecedor alterado com sucesso!", Severity.Success);
+                }
+                else
+                {
+                    Snackbar.Add("Alteração não foi realizada.", Severity.Error);
+                }
+                MudDialog.Close(DialogResult.Ok(sucesso));
+            }
+            
+        }catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao salvar o fornecedor: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _salvando = false;
+        }
+    }
+}

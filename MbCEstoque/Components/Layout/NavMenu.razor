@@ -1,10 +1,11 @@
-﻿
+
 <MudNavMenu>
     <MudNavLink Href="" Match="NavLinkMatch.All" Icon="@Icons.Material.Filled.Home">Home</MudNavLink>
-    <MudNavLink Href="counter" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Add">Counter</MudNavLink>
-    
-    <MudNavLink Href="weather" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.List">Weather</MudNavLink>
 
+    <MudNavGroup Title="Cadastros" Icon="@Icons.Material.Filled.Inventory2" Expanded="true">
+        <MudNavLink Href="fornecedores" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.LocalShipping">Fornecedores</MudNavLink>
+        <MudNavLink Href="produtos" Match="NavLinkMatch.Prefix" Icon="@Icons.Material.Filled.Inventory2">Produtos</MudNavLink>
+    </MudNavGroup>
 </MudNavMenu>
 
 

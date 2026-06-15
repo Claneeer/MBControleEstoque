@@ -1,0 +1,215 @@
+@page "/produtos"
+@using MbCEstoque.Models
+@using MbCEstoque.Services.Interfaces
+@inject IProdutoService produtoService
+@inject IDialogService dialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>Produtos</PageTitle>
+
+<MudPaper Class="pa-4 mb-4" Elevation="1">
+    <MudStack Row="true" AlignItems="AlignItems.Center" Justify="Justify.SpaceBetween">
+        <div>
+            <MudText Typo="Typo.h5">
+                Produtos
+            </MudText>
+            <MudText Typo="Typo.body2" Color="Color.Secondary">
+                Gerencie os produtos cadastrados no sistema de estoque.
+            </MudText>
+        </div>
+
+        <MudButton Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Add"
+                   OnClick="AbrirNovoAsync">
+            Novo Produto
+        </MudButton>
+    </MudStack>
+</MudPaper>
+
+<MudDataGrid T="Produto"
+             Items="@_produtosFiltrados"
+             Loading="@_carregando"
+             Dense="true"
+             Hover="true"
+             Bordered="true"
+             Striped="true"
+             Filterable="false"
+             SortMode="SortMode.Multiple"
+             RowsPerPage="10"
+             Elevation="2">
+    <ToolBarContent>
+        <MudText Typo="Typo.h6">Lista de Produtos</MudText>
+        <MudSpacer />
+        <MudTextField T="string"
+                      @bind-Value="_busca"
+                      Placeholder="Buscar por nome, código ou descrição..."
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      Immediate="true"
+                      Clearable="true"
+                      Class="mt-0"
+                      Style="min-width: 360px;" />
+    </ToolBarContent>
+    <Columns>
+        <PropertyColumn Property="x => x.Id"            Title="ID"          Sortable="true" />
+        <PropertyColumn Property="x => x.Nome"          Title="Nome"        Sortable="true" />
+        <PropertyColumn Property="x => x.CodigoBarras"  Title="Código"      Sortable="true" />
+        <PropertyColumn Property="x => x.PrecoUnitario" Title="Preço"       Sortable="true" />
+        <PropertyColumn Property="x => x.CategoriaId"   Title="Categoria"   Sortable="true" />
+        <PropertyColumn Property="x => x.FornecedorId"  Title="Fornecedor"  Sortable="true" />
+
+        <TemplateColumn Title="Status" Sortable="false" Filterable="false">
+            <CellTemplate>
+                @if (context.Item.Ativo)
+                {
+                    <MudChip T="string" Color="Color.Success" Variant="Variant.Filled" Size="Size.Small">
+                        Ativo
+                    </MudChip>
+                }
+                else
+                {
+                    <MudChip T="string" Color="Color.Default" Variant="Variant.Filled" Size="Size.Small">
+                        Inativo
+                    </MudChip>
+                }
+            </CellTemplate>
+        </TemplateColumn>
+
+        <TemplateColumn Title="Ações" Sortable="false" Filterable="false" StickyRight="true">
+            <CellTemplate>
+                <MudTooltip Text="Editar produto">
+                    <MudIconButton Icon="@Icons.Material.Filled.Edit"
+                                   Color="Color.Warning"
+                                   Size="Size.Small"
+                                   OnClick="@(() => AbrirEditarAsync(context.Item))" />
+                </MudTooltip>
+
+                <MudTooltip Text="Excluir produto">
+                    <MudIconButton Icon="@Icons.Material.Filled.Delete"
+                                   Color="Color.Error"
+                                   Size="Size.Small"
+                                   OnClick="@(() => ExcluirAsync(context.Item))" />
+                </MudTooltip>
+            </CellTemplate>
+        </TemplateColumn>
+    </Columns>
+
+    <NoRecordsContent>
+        <MudText Class="pa-4" Color="Color.Secondary">
+            Nenhum produto encontrado.
+        </MudText>
+    </NoRecordsContent>
+
+    <LoadingContent>
+        <MudText Class="pa-4" Color="Color.Secondary">
+            Carregando produtos...
+        </MudText>
+    </LoadingContent>
+
+    <PagerContent>
+        <MudDataGridPager T="Produto" />
+    </PagerContent>
+</MudDataGrid>
+
+@code {
+    private List<Produto> _produtos   = new();
+    private bool          _carregando = true;
+    private string        _busca      = string.Empty;
+
+    private IEnumerable<Produto> _produtosFiltrados => string.IsNullOrWhiteSpace(_busca)
+        ? _produtos
+        : _produtos.Where(p =>
+            (p.Nome?.Contains(_busca, StringComparison.OrdinalIgnoreCase)         ?? false) ||
+            (p.CodigoBarras?.Contains(_busca, StringComparison.OrdinalIgnoreCase) ?? false) ||
+            (p.Descricao?.Contains(_busca, StringComparison.OrdinalIgnoreCase)    ?? false));
+
+    protected override async Task OnInitializedAsync() => await CarregarAsync();
+
+    private async Task CarregarAsync()
+    {
+        try
+        {
+            _carregando = true;
+            _produtos = await produtoService.ListarTodosProduto();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao listar os produtos: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _carregando = false;
+        }
+    }
+
+    private readonly DialogOptions _dialogOptions = new DialogOptions
+    {
+        CloseButton   = true,
+        MaxWidth      = MaxWidth.Medium,
+        FullWidth     = true,
+        BackdropClick = false
+    };
+
+    private async Task AbrirNovoAsync()
+    {
+        var parameters = new DialogParameters<ProdutoDialog>
+        {
+            { x => x.Produto, new Produto { Ativo = true } }
+        };
+
+        var dialog = await dialogService.ShowAsync<ProdutoDialog>(
+            "Novo Produto", parameters, _dialogOptions);
+
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await CarregarAsync();
+    }
+
+    private async Task AbrirEditarAsync(Produto produto)
+    {
+        var produtoEdit = await produtoService.PesquisarProdutoPorId(produto.Id);
+        if (produtoEdit is null)
+        {
+            Snackbar.Add("Produto não encontrado.", Severity.Error);
+            return;
+        }
+
+        var parameters = new DialogParameters<ProdutoDialog>
+        {
+            { x => x.Produto, produtoEdit }
+        };
+
+        var dialog = await dialogService.ShowAsync<ProdutoDialog>(
+            "Editar Produto", parameters, _dialogOptions);
+
+        var result = await dialog.Result;
+        if (result is { Canceled: false })
+            await CarregarAsync();
+    }
+
+    private async Task ExcluirAsync(Produto produto)
+    {
+        var confirmar = await dialogService.ShowMessageBoxAsync(
+            title:      "Confirmar Exclusão",
+            message:    $"Deseja realmente excluir o produto \"{produto.Nome}\"?",
+            yesText:    "Sim, excluir",
+            cancelText: "Cancelar");
+
+        if (confirmar != true) return;
+
+        try
+        {
+            var sucesso = await produtoService.ExcluirAsync(produto.Id);
+            Snackbar.Add(
+                sucesso ? "Produto excluído com sucesso" : "Falha ao excluir o registro",
+                sucesso ? Severity.Success : Severity.Warning);
+
+            if (sucesso) await CarregarAsync();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao excluir o registro: {ex.Message}", Severity.Error);
+        }
+    }
+}

@@ -1,32 +1,53 @@
-﻿using MbCEstoque.Services.Interfaces;
+using MbCEstoque.Services.Interfaces;
+using MBCEstoque.Data;
+using Microsoft.EntityFrameworkCore;
 
 namespace MbCEstoque.Services
 {
     public class CategoriaService : ICategoriaService
     {
-        public Task<Categoria?> AlterarAsync(Categoria categoria)
+        private readonly SQLServerEstoqueDbContext _context;
+
+        public CategoriaService(SQLServerEstoqueDbContext context)
         {
-            throw new NotImplementedException();
+            _context = context;
         }
 
-        public Task<Categoria> CriarAsync(Categoria categoria)
+        public async Task<List<Categoria>> ListarTodasAsCategorias()
         {
-            throw new NotImplementedException();
+            return await _context.Categorias.AsNoTracking().ToListAsync();
         }
 
-        public Task<bool> ExcluirAsync(int id)
+        public async Task<Categoria?> PesquisarCategoriaPorId(int id)
         {
-            throw new NotImplementedException();
+            return await _context.Categorias.AsNoTracking().FirstOrDefaultAsync(f => f.Id == id);
         }
 
-        public Task<List<Categoria>> ListarTodasAsCategorias()
+        public async Task<Categoria> CriarAsync(Categoria categoria)
         {
-            throw new NotImplementedException();
+            _context.Categorias.Add(categoria);
+            await _context.SaveChangesAsync();
+            return categoria;
         }
 
-        public Task<Categoria?> PesquisarCategoriaPorId(int id)
+        public async Task<bool?> AlterarAsync(Categoria categoria)
         {
-            throw new NotImplementedException();
+            var existe = await _context.Categorias.AnyAsync(f => f.Id == categoria.Id);
+            if (!existe) return null;
+
+            _context.Categorias.Update(categoria);
+            await _context.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<bool> ExcluirAsync(int id)
+        {
+            var categoria = await _context.Categorias.FindAsync(id);
+            if (categoria is null) return false;
+
+            _context.Categorias.Remove(categoria);
+            await _context.SaveChangesAsync();
+            return true;
         }
     }
 }

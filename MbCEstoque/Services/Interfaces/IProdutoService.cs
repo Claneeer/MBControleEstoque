@@ -1,8 +1,11 @@
-﻿public interface IProdutoService
+namespace MbCEstoque.Services.Interfaces
 {
-    Task<List<Produto>> ListarTodasAsProduto();
-    Task<Produto?> PesquisarProdutoPorId(int id);
-    Task<Produto> CriarAsync(Produto Produto);
-    Task<Produto?> AlterarAsync(Produto Produto);
-    Task<bool> ExcluirAsync(int id);
+    public interface IProdutoService
+    {
+        Task<List<Produto>>  ListarTodosProduto();
+        Task<Produto?>       PesquisarProdutoPorId(int id);
+        Task                 CriarAsync(Produto produto);
+        Task<bool>           AlterarAsync(Produto produto);
+        Task<bool>           ExcluirAsync(int id);
+    }
 }

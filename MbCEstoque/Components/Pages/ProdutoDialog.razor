@@ -1,0 +1,180 @@
+@using MbCEstoque.Models
+@using MbCEstoque.Services.Interfaces
+@using MudBlazor
+@inject IProdutoService produtoService
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6">
+            <MudIcon Icon="@(Produto.Id == 0 ? Icons.Material.Filled.Inventory2 : Icons.Material.Filled.Edit)"
+                     Class="mr-2"
+                     Style="vertical-align: middle;" />
+            @(Produto.Id == 0 ? "Novo Produto" : "Editar Produto")
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudForm @ref="_form" @bind-IsValid="_formValido">
+            <MudGrid Spacing="3">
+
+                <!-- Nome -->
+                <MudItem xs="12" md="8">
+                    <MudTextField @bind-Value="Produto.Nome"
+                                  Label="Nome"
+                                  Variant="Variant.Outlined"
+                                  Required="true"
+                                  RequiredError="Nome é obrigatório."
+                                  MaxLength="100"
+                                  Counter="100"
+                                  Immediate="true"
+                                  AdornmentIcon="@Icons.Material.Filled.ShoppingCart"
+                                  Adornment="Adornment.Start" />
+                </MudItem>
+
+                <!-- Código de Barras (SKU) -->
+                <MudItem xs="12" md="4">
+                    <MudTextField @bind-Value="Produto.CodigoBarras"
+                                  Label="Código (SKU)"
+                                  Variant="Variant.Outlined"
+                                  MaxLength="50"
+                                  Placeholder="EX-0001"
+                                  Immediate="true"
+                                  AdornmentIcon="@Icons.Material.Filled.QrCode"
+                                  Adornment="Adornment.Start" />
+                </MudItem>
+
+                <!-- Preço Unitário -->
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="Produto.PrecoUnitario"
+                                     T="decimal"
+                                     Label="Preço (R$)"
+                                     Variant="Variant.Outlined"
+                                     Required="true"
+                                     RequiredError="Preço é obrigatório."
+                                     Min="0m"
+                                     Format="C2"
+                                     Immediate="true"
+                                     AdornmentIcon="@Icons.Material.Filled.AttachMoney"
+                                     Adornment="Adornment.Start" />
+                </MudItem>
+
+                <!-- Estoque (via navigation) -->
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="Produto.CategoriaId"
+                                     T="int"
+                                     Label="ID Categoria"
+                                     Variant="Variant.Outlined"
+                                     Required="true"
+                                     RequiredError="Categoria é obrigatória."
+                                     Min="1"
+                                     Immediate="true"
+                                     AdornmentIcon="@Icons.Material.Filled.Category"
+                                     Adornment="Adornment.Start" />
+                </MudItem>
+
+                <!-- Fornecedor -->
+                <MudItem xs="12" md="6">
+                    <MudNumericField @bind-Value="Produto.FornecedorId"
+                                     T="int"
+                                     Label="ID Fornecedor"
+                                     Variant="Variant.Outlined"
+                                     Min="1"
+                                     Immediate="true"
+                                     AdornmentIcon="@Icons.Material.Filled.LocalShipping"
+                                     Adornment="Adornment.Start" />
+                </MudItem>
+
+                <!-- Descrição -->
+                <MudItem xs="12">
+                    <MudTextField @bind-Value="Produto.Descricao"
+                                  Label="Descrição"
+                                  Variant="Variant.Outlined"
+                                  Lines="3"
+                                  MaxLength="500"
+                                  Counter="500"
+                                  Immediate="true"
+                                  AdornmentIcon="@Icons.Material.Filled.Notes"
+                                  Adornment="Adornment.Start" />
+                </MudItem>
+
+                <!-- Status -->
+                <MudItem xs="12">
+                    <MudSwitch @bind-Value="Produto.Ativo"
+                               Color="Color.Success"
+                               UncheckedColor="Color.Default"
+                               Label="@_labelAtivo" />
+                </MudItem>
+
+            </MudGrid>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancelar"
+                   Variant="Variant.Text"
+                   Color="Color.Default"
+                   Disabled="_salvando">
+            Cancelar
+        </MudButton>
+        <MudButton OnClick="SalvarAsync"
+                   Variant="Variant.Filled"
+                   Color="Color.Primary"
+                   StartIcon="@Icons.Material.Filled.Save"
+                   Disabled="_salvando">
+            @if (_salvando)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ms-2">Salvando...</MudText>
+            }
+            else
+            {
+                <MudText>Salvar</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter]          public  Produto            Produto   { get; set; } = new Produto();
+
+    private string _labelAtivo => Produto.Ativo ? "Produto Ativo" : "Produto Inativo";
+
+    private MudForm _form     = default!;
+    private bool    _formValido;
+    private bool    _salvando;
+
+    private void Cancelar() => MudDialog.Cancel();
+
+    private async Task SalvarAsync()
+    {
+        await _form.ValidateAsync();
+        if (!_form.IsValid) return;
+
+        _salvando = true;
+        try
+        {
+            if (Produto.Id == 0)
+            {
+                await produtoService.CriarAsync(Produto);
+                Snackbar.Add("Produto criado com sucesso!", Severity.Success);
+                MudDialog.Close(DialogResult.Ok(true));
+            }
+            else
+            {
+                var sucesso = await produtoService.AlterarAsync(Produto);
+                Snackbar.Add(
+                    sucesso ? "Produto alterado com sucesso!" : "Alteração não foi realizada.",
+                    sucesso ? Severity.Success : Severity.Error);
+                MudDialog.Close(DialogResult.Ok(sucesso));
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao salvar o produto: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _salvando = false;
+        }
+    }
+}

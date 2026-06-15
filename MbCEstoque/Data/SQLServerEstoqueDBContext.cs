@@ -1,6 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Migrations.Operations;
-using Microsoft.Identity.Client;
+using Microsoft.EntityFrameworkCore;
 
 namespace MBCEstoque.Data
 {
@@ -25,7 +23,7 @@ namespace MBCEstoque.Data
             // ── Nomes explícitos das tabelas ─────────────────────────
             builder.Entity<Produto>().ToTable("Produto");
             builder.Entity<Categoria>().ToTable("Categoria");
-            builder.Entity<Fornecedor>().ToTable("Fornecedore");
+            builder.Entity<Fornecedor>().ToTable("Fornecedor");
             builder.Entity<Estoque>().ToTable("Estoque");
             builder.Entity<MovimentacaoEstoque>().ToTable("MovimentacoesEstoque");
 
